@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Pattern Analysis | CITS1312</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0b1622;
+    --card: #0f1e2e;
+    --border: #162436;
+    --text: #cfe4f7;
+    --muted: #4a6278;
+    --hot: #f97316;
+    --warm: #fbbf24;
+    --cool: #60a5fa;
+    --cold: #818cf8;
+    --rain: #06b6d4;
+    --sun: #facc15;
+    --humid: #34d399;
+    --wind: #a78bfa;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Playfair Display', serif;
+    min-height: 100vh;
+    padding: 28px;
+    background-image:
+      radial-gradient(ellipse at 30% 0%, rgba(96,165,250,0.07) 0%, transparent 40%),
+      radial-gradient(ellipse at 70% 100%, rgba(249,115,22,0.07) 0%, transparent 40%);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 { font-size: 2rem; font-weight: 900; color: var(--cool); }
+  h1 span { color: var(--hot); }
+
+  .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.63rem;
+    color: var(--muted);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .meta {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: right;
+  }
+  .meta .mid { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--sun); }
+  .meta .mname { font-size: 0.9rem; font-weight: 700; margin-top: 2px; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .kpi {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .kpi-icon { font-size: 1.8rem; margin-bottom: 6px; }
+  .kpi-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .kpi-v { font-size: 1.6rem; font-weight: 900; color: var(--kc); margin-top: 4px; }
+  .kpi-s { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--muted); margin-top: 4px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+  }
+
+  .ct {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ct span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .canvas-wrap { height: 200px; position: relative; }
+
+  .weather-table { width: 100%; border-collapse: collapse; }
+  .weather-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .weather-table td {
+    padding: 10px 10px;
+    font-size: 0.82rem;
+    border-bottom: 1px solid rgba(22,36,54,0.6);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .weather-table tr:last-child td { border-bottom: none; }
+
+  .footer {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(3,1fr); }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🌦 Weather Pattern <span>Analysis</span></h1>
+    <div class="sub">CodTech IT Solutions • Data Analytics Internship • Project 4 of 4</div>
+  </div>
+  <div class="meta">
+    <div class="mid">CITS1312</div>
+    <div class="mname">Vedant Pramod Suryawanshi</div>
+  </div>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi" style="--kc: #f97316;">
+    <div class="kpi-icon">🌡️</div>
+    <div class="kpi-label">Peak Temp</div>
+    <div class="kpi-v">42°C</div>
+    <div class="kpi-s">May 2026, Hyderabad</div>
+  </div>
+  <div class="kpi" style="--kc: #60a5fa;">
+    <div class="kpi-icon">❄️</div>
+    <div class="kpi-label">Min Temp</div>
+    <div class="kpi-v">11°C</div>
+    <div class="kpi-s">January 2026</div>
+  </div>
+  <div class="kpi" style="--kc: #06b6d4;">
+    <div class="kpi-icon">🌧️</div>
+    <div class="kpi-label">Annual Rain</div>
+    <div class="kpi-v">812mm</div>
+    <div class="kpi-s">↑ 6% vs last year</div>
+  </div>
+  <div class="kpi" style="--kc: #34d399;">
+    <div class="kpi-icon">💧</div>
+    <div class="kpi-label">Avg Humidity</div>
+    <div class="kpi-v">64%</div>
+    <div class="kpi-s">Peak: 91% Aug</div>
+  </div>
+  <div class="kpi" style="--kc: #a78bfa;">
+    <div class="kpi-icon">💨</div>
+    <div class="kpi-label">Max Wind</div>
+    <div class="kpi-v">48 km/h</div>
+    <div class="kpi-s">Monsoon season</div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="chart-card">
+    <div class="ct">Monthly Temperature (°C) <span>Max / Min / Avg — Hyderabad</span></div>
+    <div class="canvas-wrap"><canvas id="tempChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="ct">Rainfall & Humidity <span>Monthly mm & %</span></div>
+    <div class="canvas-wrap"><canvas id="rainChart"></canvas></div>
+  </div>
+</div>
+
+<div class="grid3">
+  <div class="chart-card">
+    <div class="ct">Season Comparison <span>Avg °C</span></div>
+    <div class="canvas-wrap"><canvas id="seasonBar"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="ct">Weather Events <span>Days per type</span></div>
+    <div class="canvas-wrap"><canvas id="eventPie"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="ct">Monthly Stats</div>
+    <table class="weather-table">
+      <thead>
+        <tr><th>Month</th><th>Avg °C</th><th>Rain</th><th>Sunny</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Jun 25</td><td style="color:#fbbf24">34.2</td><td style="color:#06b6d4">148mm</td><td style="color:#facc15">8d</td></tr>
+        <tr><td>Jul 25</td><td style="color:#fbbf24">30.1</td><td style="color:#06b6d4">189mm</td><td style="color:#facc15">5d</td></tr>
+        <tr><td>Aug 25</td><td style="color:#fbbf24">29.8</td><td style="color:#06b6d4">172mm</td><td style="color:#facc15">6d</td></tr>
+        <tr><td>Jan 26</td><td style="color:#60a5fa">16.2</td><td style="color:#06b6d4">12mm</td><td style="color:#facc15">26d</td></tr>
+        <tr><td>May 26</td><td style="color:#f97316">38.7</td><td style="color:#06b6d4">22mm</td><td style="color:#facc15">24d</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">
+  Project 4 • Weather Pattern Analysis • Vedant Pramod Suryawanshi • CITS1312 • CodTech IT Solutions Pvt. Ltd • Period: 20 May – 17 June 2026
+</div>
+
+<script>
+Chart.defaults.font.family = 'JetBrains Mono';
+Chart.defaults.color = '#4a6278';
+Chart.defaults.borderColor = '#162436';
+
+const months = ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'];
+const maxTemp = [38,33,31,30,29,24,22,19,22,32,37,42];
+const minTemp = [26,24,23,21,19,14,11,11,14,19,24,28];
+const avgTemp = [32,28.5,27,25.5,24,19,16.5,15,18,25.5,30.5,35];
+const rainfall= [80,189,172,120,40,10,5,12,8,15,30,22];
+const humidity= [72,85,91,82,65,52,48,50,54,60,62,58];
+
+new Chart(document.getElementById('tempChart'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Max °C', data: maxTemp, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)', fill: true, tension: 0.4, pointRadius: 3 },
+      { label: 'Avg °C', data: avgTemp, borderColor: '#fbbf24', fill: false, tension: 0.4, pointRadius: 3, borderDash: [4,3] },
+      { label: 'Min °C', data: minTemp, borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.05)', fill: true, tension: 0.4, pointRadius: 3 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 9 } } } }, scales: { y: { title: { display: true, text: '°C' } } } }
+});
+
+new Chart(document.getElementById('rainChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Rainfall (mm)', data: rainfall, backgroundColor: 'rgba(6,182,212,0.7)', yAxisID: 'y', borderRadius: 4 },
+      { label: 'Humidity (%)', data: humidity, type: 'line', borderColor: '#34d399', fill: false, tension: 0.4, pointRadius: 3, yAxisID: 'y1' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { font: { size: 9 } } } },
+    scales: {
+      y: { beginAtZero: true, title: { display: true, text: 'mm' } },
+      y1: { beginAtZero: true, position: 'right', max: 100, grid: { drawOnChartArea: false }, title: { display: true, text: '%' } }
+    }
+  }
+});
+
+new Chart(document.getElementById('seasonBar'), {
+  type: 'bar',
+  data: {
+    labels: ['Summer\n(Mar–May)','Monsoon\n(Jun–Sep)','Post-M\n(Oct–Nov)','Winter\n(Dec–Feb)'],
+    datasets: [{ label: 'Avg Temp °C', data: [35.6,29.4,26.2,16.8], backgroundColor: ['#f97316','#06b6d4','#fbbf24','#818cf8'], borderRadius: 6 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: '°C' } } } }
+});
+
+new Chart(document.getElementById('eventPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Sunny','Partly Cloudy','Rainy','Overcast','Foggy'],
+    datasets: [{ data: [142,94,68,48,13], backgroundColor: ['#facc15','#fbbf24','#06b6d4','#4a6278','#818cf8'], borderWidth: 0, hoverOffset: 8 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 8 }, padding: 8 } } } }
+});
+</script>
+</body>
+</html>
